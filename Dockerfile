@@ -54,6 +54,7 @@ FROM php:8.3-fpm AS runtime
 
 ENV APP_ENV=prod
 ENV APP_DEBUG=0
+ENV PORT=80
 
 WORKDIR /app
 
@@ -91,8 +92,8 @@ COPY entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # nag-healthcheck to verify the app is responding
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost/ || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
+    CMD sh -c 'curl -f http://127.0.0.1:${PORT:-80}/ || exit 1'
 
 # Expose HTTP port
 EXPOSE 80
