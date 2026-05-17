@@ -1,0 +1,49 @@
+# Git files
+.git
+.gitignore
+
+# Docker files not needed inside image
+docker-compose.yaml
+docker-compose.yml
+
+# Environment files
+.env.local
+.env.*.local
+
+# Symfony cache and logs
+var/cache/*
+var/log/*
+
+# Keep var directory but ignore generated files
+!var/cache/.gitkeep
+!var/log/.gitkeep
+
+# Vendor dependencies
+vendor/
+
+# Node dependencies and frontend build cache
+node_modules/
+npm-debug.log
+yarn-error.log
+.pnpm-store/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test and documentation files
+tests/
+README.md
+
+# Temporary files
+*.tmp
+*.log
+
+# Composer cache or lock backup files
+composer.phar
