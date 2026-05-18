@@ -29,17 +29,25 @@ RUN composer install --no-interaction --no-scripts --optimize-autoloader
 # nag-copy the rest of the project files
 COPY . .
 
-# nag-minimal .env for image build only (Railway/compose override DATABASE_URL at runtime)
+# nag-minimal .env for image build only (Railway/compose override these at runtime)
 RUN echo "APP_ENV=prod" > /app/.env && \
     echo "APP_DEBUG=0" >> /app/.env && \
     echo "APP_SECRET=ChangeMeInProduction" >> /app/.env && \
-    echo 'DATABASE_URL=mysql://build:build@127.0.0.1:3306/build?serverVersion=8.0.32&charset=utf8mb4' >> /app/.env
+    echo "APP_SHARE_DIR=var/share" >> /app/.env && \
+    echo 'DATABASE_URL=mysql://build:build@127.0.0.1:3306/build?serverVersion=8.0.32&charset=utf8mb4' >> /app/.env && \
+    echo "DEFAULT_URI=http://localhost" >> /app/.env && \
+    echo "MESSENGER_TRANSPORT_DSN=doctrine://default?auto_setup=0" >> /app/.env && \
+    echo "MAILER_DSN=null://null" >> /app/.env
 
-# nag-use production env during build (dev bundles are removed by --no-dev)
-ENV APP_ENV=prod
-ENV APP_DEBUG=0
-# nag-placeholder only for "docker build"; Railway DATABASE_URL replaces this at runtime
-ENV DATABASE_URL="mysql://build:build@127.0.0.1:3306/build?serverVersion=8.0.32&charset=utf8mb4"
+# nag-build-time placeholders (overridden by Railway at runtime)
+ENV APP_ENV=prod \
+    APP_DEBUG=0 \
+    APP_SECRET=ChangeMeInProduction \
+    APP_SHARE_DIR=var/share \
+    DATABASE_URL="mysql://build:build@127.0.0.1:3306/build?serverVersion=8.0.32&charset=utf8mb4" \
+    DEFAULT_URI=http://localhost \
+    MESSENGER_TRANSPORT_DSN=doctrine://default?auto_setup=0 \
+    MAILER_DSN=null://null
 
 # nag-run Symfony commands
 RUN composer install --no-interaction --optimize-autoloader --no-ansi --no-dev --no-scripts
