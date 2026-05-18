@@ -13,8 +13,14 @@ if [ -n "$RAILWAY_ENVIRONMENT" ]; then
     unset MYSQL_HOST MYSQL_PORT MYSQL_USER MYSQL_PASSWORD MYSQL_DATABASE MYSQL_ROOT_PASSWORD 2>/dev/null || true
 fi
 
-echo "Configuring Nginx to listen on 0.0.0.0:${PORT}..."
-sed -i "s/listen 0.0.0.0:80/listen 0.0.0.0:${PORT}/" /etc/nginx/conf.d/default.conf
+NGINX_CONF="/etc/nginx/conf.d/default.conf"
+if [ "$PORT" != "80" ]; then
+    echo "Configuring Nginx on 0.0.0.0:${PORT} and 0.0.0.0:80 (Railway proxy may use either)..."
+    sed -i "s/listen 0.0.0.0:80 default_server;/listen 0.0.0.0:${PORT} default_server;\n    listen 0.0.0.0:80 default_server;/" "$NGINX_CONF"
+else
+    echo "Configuring Nginx to listen on 0.0.0.0:${PORT}..."
+    sed -i "s/listen 0.0.0.0:80/listen 0.0.0.0:${PORT}/" "$NGINX_CONF"
+fi
 
 DB_OK=0
 TRIES=0
@@ -49,5 +55,5 @@ chown -R www-data:www-data /app/var 2>/dev/null || true
 echo "Starting PHP-FPM..."
 php-fpm -D
 
-echo "Starting Nginx on 0.0.0.0:${PORT}..."
+echo "Starting Nginx..."
 exec nginx -g "daemon off;"
