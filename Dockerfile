@@ -29,12 +29,10 @@ RUN composer install --no-interaction --no-scripts --optimize-autoloader
 # nag-copy the rest of the project files
 COPY . .
 
-# nag-create .env file if it does not exist
-RUN if [ ! -f /app/.env ]; then \
-    echo "APP_ENV=${APP_ENV:-prod}" > /app/.env; \
-    echo "APP_DEBUG=${APP_DEBUG:-false}" >> /app/.env; \
-    echo "APP_SECRET=${APP_SECRET:-ChangeMe}" >> /app/.env; \
-    fi
+# nag-minimal .env for image (real secrets/DB URL come from Railway or compose env_file)
+RUN echo "APP_ENV=prod" > /app/.env && \
+    echo "APP_DEBUG=0" >> /app/.env && \
+    echo "APP_SECRET=ChangeMeInProduction" >> /app/.env
 
 # nag-use production env during build (dev bundles are removed by --no-dev)
 ENV APP_ENV=prod

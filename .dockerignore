@@ -6,7 +6,8 @@
 docker-compose.yaml
 docker-compose.yml
 
-# Environment files
+# Environment files (use Railway / compose env instead of baking .env into the image)
+.env
 .env.local
 .env.*.local
 

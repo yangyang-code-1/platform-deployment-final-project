@@ -1,48 +1,50 @@
 #!/bin/sh
-set -e
 
 PORT="${PORT:-80}"
+echo "=== Container startup (PORT=${PORT}, APP_ENV=${APP_ENV}) ==="
+
+if [ -n "$RAILWAY_ENVIRONMENT" ]; then
+    echo "Railway detected."
+    if [ -z "$DATABASE_URL" ]; then
+        echo "ERROR: DATABASE_URL is not set. On the app service, add DATABASE_URL referencing MySQL."
+    else
+        echo "DATABASE_URL is set."
+    fi
+    unset MYSQL_HOST MYSQL_PORT MYSQL_USER MYSQL_PASSWORD MYSQL_DATABASE MYSQL_ROOT_PASSWORD 2>/dev/null || true
+fi
+
 echo "Configuring Nginx to listen on 0.0.0.0:${PORT}..."
 sed -i "s/listen 0.0.0.0:80/listen 0.0.0.0:${PORT}/" /etc/nginx/conf.d/default.conf
 
-if [ -n "$RAILWAY_ENVIRONMENT" ] && [ -z "$DATABASE_URL" ]; then
-    echo "WARNING: RAILWAY_ENVIRONMENT is set but DATABASE_URL is empty."
-    echo "Add DATABASE_URL in Railway app service variables (reference the MySQL service)."
-fi
-
 DB_OK=0
-echo "Waiting for database..."
 TRIES=0
 MAX_TRIES=30
+echo "Waiting for database..."
 while [ "$TRIES" -lt "$MAX_TRIES" ]; do
     if php bin/console dbal:run-sql "SELECT 1" --no-interaction > /dev/null 2>&1; then
         DB_OK=1
         break
     fi
     TRIES=$((TRIES + 1))
-    echo "Database not ready, retrying in 2s... (${TRIES}/${MAX_TRIES})"
+    echo "Database not ready (${TRIES}/${MAX_TRIES})..."
     sleep 2
 done
 
 if [ "$DB_OK" -eq 1 ]; then
     echo "Database is ready."
-    echo "Running migrations..."
-    php bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration
+    php bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration || echo "Migrations skipped or failed (non-fatal)."
 else
-    echo "WARNING: Database not reachable. Starting web server anyway (check DATABASE_URL on Railway)."
+    echo "WARNING: Database not reachable. Web server will still start."
 fi
 
 if [ "$APP_ENV" = "prod" ]; then
-    echo "Warming production cache..."
-    php bin/console cache:warmup --env=prod --no-debug
+    php bin/console cache:warmup --env=prod --no-debug || echo "Cache warmup failed (non-fatal)."
     if [ ! -f public/assets/manifest.json ]; then
-        echo "Compiling assets..."
-        php bin/console asset-map:compile --env=prod --no-debug
+        php bin/console asset-map:compile --env=prod --no-debug || echo "Asset compile failed (non-fatal)."
     fi
 fi
 
-echo "Fixing var directory permissions..."
-chown -R www-data:www-data /app/var
+chown -R www-data:www-data /app/var 2>/dev/null || true
 
 echo "Starting PHP-FPM..."
 php-fpm -D
